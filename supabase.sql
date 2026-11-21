@@ -11,6 +11,10 @@ create table if not exists public.reviews (
 
 alter table public.reviews enable row level security;
 
+drop policy if exists "Public can read reviews" on public.reviews;
+drop policy if exists "Public can create reviews" on public.reviews;
+drop policy if exists "Public can delete reviews" on public.reviews;
+
 create policy "Public can read reviews"
   on public.reviews for select
   to anon, authenticated
