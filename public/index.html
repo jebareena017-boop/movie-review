@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CineReview — Movie Reviews</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main id="app">
+    <section id="loginPage" class="login-page">
+      <div class="brand-panel">
+        <div class="brand-mark"><span>CR</span></div>
+        <p class="eyebrow">THE REVIEW CLUB</p>
+        <h1>Every story<br><em>deserves a voice.</em></h1>
+        <p class="brand-copy">Share your take. Discover new favorites. Shape the conversation around film.</p>
+      </div>
+
+      <div class="login-panel">
+        <div class="login-card">
+          <div class="tabs" role="tablist">
+            <button class="tab active" data-role="user" role="tab">User</button>
+            <button class="tab" data-role="admin" role="tab">Admin</button>
+          </div>
+          <p class="login-kicker" id="loginKicker">USER PORTAL</p>
+          <h2 id="loginTitle">Welcome back</h2>
+
+          <form id="loginForm">
+            <label for="username">Username</label>
+            <input id="username" name="username" value="user" autocomplete="username" required>
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input id="password" name="password" type="password" value="123" autocomplete="current-password" required>
+              <button type="button" id="togglePassword" aria-label="Show password">Show</button>
+            </div>
+            <p id="loginError" class="form-error" role="alert"></p>
+            <button class="primary-btn" type="submit">Sign in <span>→</span></button>
+          </form>
+          <p class="demo-note">Demo password: <strong>123</strong></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="dashboardPage" class="dashboard hidden">
+      <header class="topbar">
+        <button class="brand-small" id="homeBtn" aria-label="Go to reviews"><span>CR</span><strong>CineReview</strong></button>
+        <nav class="nav-links">
+          <button class="nav-link active" data-view="reviews">Reviews</button>
+          <button class="nav-link" data-view="write" id="writeNav">Write review</button>
+          <button class="nav-link" data-view="admin" id="adminNav">Dashboard</button>
+        </nav>
+        <button class="logout-btn" id="logoutBtn">Log out <span>↗</span></button>
+      </header>
+
+      <div class="dashboard-content">
+        <section id="reviewsView" class="view active">
+          <div class="page-heading">
+            <div><p class="eyebrow dark">COMMUNITY REVIEWS</p><h2>What people are watching</h2></div>
+            <button class="primary-btn compact" id="writeReviewBtn">Write a review <span>+</span></button>
+          </div>
+          <div class="review-grid" id="reviewGrid"></div>
+          <div id="emptyState" class="empty-state hidden"><div>♢</div><h3>No reviews yet</h3><p>Be the first to share your take.</p></div>
+        </section>
+
+        <section id="writeView" class="view">
+          <div class="form-layout">
+            <div class="form-intro">
+              <p class="eyebrow dark">YOUR TAKE</p>
+              <h2>Review a movie</h2>
+              <p>Tell the community what moved you, surprised you, or left you wanting more.</p>
+            </div>
+            <form id="reviewForm" class="review-form">
+              <div class="form-row">
+                <div><label for="name">Your name</label><input id="name" name="name" placeholder="Full name" required></div>
+                <div><label for="gender">Gender</label><select id="gender" name="gender" required><option value="">Select</option><option>Female</option><option>Male</option><option>Non-binary</option><option>Prefer not to say</option></select></div>
+              </div>
+              <div class="form-row">
+                <div><label for="district">District</label><input id="district" name="district" placeholder="Your district" required></div>
+                <div><label for="movieName">Movie name</label><input id="movieName" name="movieName" placeholder="Movie title" required></div>
+              </div>
+              <div><label>Rating</label><div class="stars" id="stars" role="radiogroup" aria-label="Rating"><button type="button" data-rating="1">★</button><button type="button" data-rating="2">★</button><button type="button" data-rating="3">★</button><button type="button" data-rating="4">★</button><button type="button" data-rating="5">★</button></div><input type="hidden" id="rating" name="rating" required></div>
+              <div><label for="reviewText">Your review</label><textarea id="reviewText" name="reviewText" rows="5" placeholder="What did you think?" required></textarea></div>
+              <p id="reviewError" class="form-error" role="alert"></p>
+              <button class="primary-btn" type="submit">Publish review <span>→</span></button>
+            </form>
+          </div>
+        </section>
+
+        <section id="adminView" class="view">
+          <div class="page-heading"><div><p class="eyebrow dark">ADMIN CONTROL</p><h2>Review dashboard</h2></div></div>
+          <div class="stats-grid"><article><p>Total reviews</p><strong id="statTotal">0</strong></article><article><p>Average rating</p><strong id="statAverage">0.0</strong></article><article><p>Top districts</p><strong id="statDistricts">—</strong></article></div>
+          <div class="admin-table-wrap"><table><thead><tr><th>Reviewer</th><th>Movie</th><th>District</th><th>Rating</th><th>Date</th><th></th></tr></thead><tbody id="adminTable"></tbody></table></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
