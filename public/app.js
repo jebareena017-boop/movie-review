@@ -41,12 +41,23 @@ async function openDashboard(role) {
   qs('#adminNav').style.display = role === 'admin' ? '' : 'none';
   qs('#writeReviewBtn').style.display = role === 'user' ? '' : 'none';
   switchView(role === 'admin' ? 'admin' : 'reviews');
+  await loadMovies();
   await loadReviews();
 }
 
 async function checkSession() {
   const session = await (await fetch('/api/session')).json();
   if (session.user) openDashboard(session.user.role);
+}
+
+async function loadMovies() {
+  const response = await fetch('/api/movies');
+  const movies = await response.json();
+  const select = qs('#movieName');
+  select.innerHTML = '<option value="">Select a movie</option>' + movies
+    .map((movie) => `<option value="${escapeHtml(movie.title)}">${escapeHtml(movie.title)} (${escapeHtml(movie.release_year)})</option>`)
+    .join('');
+  if (await isAdmin()) renderMovieTable(movies);
 }
 
 async function loadReviews() {
@@ -77,14 +88,36 @@ async function renderAdmin(reviews) {
   qs('#statAverage').textContent = stats.average.toFixed(1);
   qs('#statDistricts').textContent = stats.districts.map((item) => item.district).slice(0, 2).join(', ') || '—';
   qs('#adminTable').innerHTML = reviews.map((review) => `
-    <tr><td><strong>${escapeHtml(review.name)}</strong><br><span>${escapeHtml(review.gender)}</span></td><td>${escapeHtml(review.movie_name)}</td><td>${escapeHtml(review.district)}</td><td>${'★'.repeat(review.rating)}</td><td>${formatDate(review.created_at)}</td><td><button class="delete-btn" data-id="${review.id}">Delete</button></td></tr>`).join('');
-  qsa('.delete-btn').forEach((button) => button.addEventListener('click', () => deleteReview(button.dataset.id)));
+    <tr><td><strong>${escapeHtml(review.name)}</strong><br><span>${escapeHtml(review.gender)}</span></td><td>${escapeHtml(review.movie_name)}</td><td>${escapeHtml(review.district)}</td><td>${'★'.repeat(review.rating)}</td><td>${formatDate(review.created_at)}</td><td><button class="delete-btn review-delete" data-id="${review.id}">Delete</button></td></tr>`).join('');
+  qsa('.review-delete').forEach((button) => button.addEventListener('click', () => deleteReview(button.dataset.id)));
+}
+
+function renderMovieTable(movies) {
+  qs('#movieTable').innerHTML = movies.map((movie) => `
+    <tr>
+      <td><strong>${escapeHtml(movie.title)}</strong><br><span>${escapeHtml(movie.director || '')}</span></td>
+      <td>${escapeHtml(movie.genre)}</td>
+      <td>${escapeHtml(movie.release_year)}</td>
+      <td><button class="delete-btn movie-delete" data-id="${movie.id}">Delete</button></td>
+    </tr>`).join('') || '<tr><td colspan="4">No movies added yet.</td></tr>';
+  qsa('.movie-delete').forEach((button) => button.addEventListener('click', () => deleteMovie(button.dataset.id)));
 }
 
 async function deleteReview(id) {
   if (!confirm('Delete this review?')) return;
   const response = await fetch(`/api/reviews/${id}`, { method: 'DELETE' });
   if (response.ok) { showToast('Review deleted'); await loadReviews(); }
+}
+
+async function deleteMovie(id) {
+  if (!confirm('Delete this movie?')) return;
+  const response = await fetch(`/api/movies/${id}`, { method: 'DELETE' });
+  if (response.ok) {
+    showToast('Movie deleted');
+    await loadMovies();
+  } else {
+    showToast('Could not delete movie');
+  }
 }
 
 function switchView(view) {
@@ -126,6 +159,22 @@ qs('#logoutBtn').addEventListener('click', async () => {
   qs('#loginPage').classList.remove('hidden');
 });
 
+qs('#movieForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  qs('#movieError').textContent = '';
+  const body = Object.fromEntries(new FormData(event.target).entries());
+  const response = await fetch('/api/movies', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) return qs('#movieError').textContent = data.error;
+  event.target.reset();
+  showToast('Movie added');
+  await loadMovies();
+});
+
 function escapeHtml(value) {
   const div = document.createElement('div');
   div.textContent = value;
@@ -144,3 +193,4 @@ function showToast(message) {
 }
 
 checkSession();
+loadMovies();

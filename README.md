@@ -24,3 +24,7 @@ The app creates `movie_reviews.db` in the project root automatically on first st
 3. `.env` already contains the configured project URL and publishable key.
 
 The app uses Supabase when `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are set. Otherwise, it falls back to local SQLite.
+
+## Movie catalog
+
+Sign in as `admin` / `123`, open the Admin dashboard, and use **Add movie details** to add title, genre, language, release year, director, synopsis, and optional poster URL. Run the updated `supabase.sql` to create the `movies` table and policies.

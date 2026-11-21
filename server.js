@@ -10,6 +10,18 @@ const port = process.env.PORT || 3000;
 const db = new Database(path.join(__dirname, 'movie_reviews.db'));
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS movies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    genre TEXT NOT NULL,
+    language TEXT NOT NULL,
+    release_year INTEGER NOT NULL,
+    director TEXT NOT NULL,
+    description TEXT NOT NULL,
+    poster_url TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS reviews (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -22,8 +34,8 @@ db.exec(`
   );
 `);
 
-const seeded = db.prepare('SELECT COUNT(*) AS count FROM reviews').get().count;
-if (seeded === 0) {
+const seededReviews = db.prepare('SELECT COUNT(*) AS count FROM reviews').get().count;
+if (seededReviews === 0) {
   db.prepare(`
     INSERT INTO reviews (name, gender, district, movie_name, rating, review_text)
     VALUES (?, ?, ?, ?, ?, ?)
@@ -36,6 +48,12 @@ if (seeded === 0) {
     INSERT INTO reviews (name, gender, district, movie_name, rating, review_text)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run('Samira Khan', 'Prefer not to say', 'West', 'A Summer in June', 5, 'Warm, honest, and visually stunning. Every frame feels carefully considered.');
+}
+
+const seededMovies = db.prepare('SELECT COUNT(*) AS count FROM movies').get().count;
+if (seededMovies === 0) {
+  db.prepare(`INSERT INTO movies (title, genre, language, release_year, director, description)
+    VALUES (?, ?, ?, ?, ?, ?)`).run('The Eternal Frame', 'Drama', 'English', 2025, 'Ari Sterling', 'A moving story about memory, art, and the moments that define a life.');
 }
 
 app.use(express.json());
@@ -159,7 +177,57 @@ app.get('/api/admin/stats', requireRole('admin'), async (req, res) => {
   res.json({ total, average: average ? Number(average.toFixed(1)) : 0, districts });
 });
 
+app.get('/api/movies', async (req, res) => {
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('movies')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: 'Could not load movies.', details: error.message });
+    return res.json(data);
+  }
+  res.json(db.prepare('SELECT * FROM movies ORDER BY created_at DESC, id DESC').all());
+});
+
+app.post('/api/movies', requireRole('admin'), async (req, res) => {
+  const { title, genre, language, releaseYear, director, description, posterUrl } = req.body;
+  const values = [title, genre, language, releaseYear, director, description];
+  if (values.some((value) => value === undefined || String(value).trim() === '')) {
+    return res.status(400).json({ error: 'Title, genre, language, release year, director, and description are required.' });
+  }
+  const numericYear = Number(releaseYear);
+  if (!Number.isInteger(numericYear) || numericYear < 1888 || numericYear > 2100) {
+    return res.status(400).json({ error: 'Enter a valid release year.' });
+  }
+
+  if (supabase) {
+    const payload = {
+      title: title.trim(), genre: genre.trim(), language: language.trim(), release_year: numericYear,
+      director: director.trim(), description: description.trim(), poster_url: posterUrl?.trim() || null
+    };
+    const { data, error } = await supabase.from('movies').insert(payload).select('*').single();
+    if (error) return res.status(500).json({ error: 'Could not save movie to Supabase.', details: error.message });
+    return res.status(201).json(data);
+  }
+
+  const result = db.prepare(`
+    INSERT INTO movies (title, genre, language, release_year, director, description)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(title.trim(), genre.trim(), language.trim(), numericYear, director.trim(), description.trim());
+  res.status(201).json(db.prepare('SELECT * FROM movies WHERE id = ?').get(result.lastInsertRowid));
+});
+
+app.delete('/api/movies/:id', requireRole('admin'), async (req, res) => {
+  if (supabase) {
+    const { error } = await supabase.from('movies').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: 'Could not delete movie.', details: error.message });
+    return res.json({ ok: true });
+  }
+  const result = db.prepare('DELETE FROM movies WHERE id = ?').run(req.params.id);
+  if (!result.changes) return res.status(404).json({ error: 'Movie not found.' });
+  res.json({ ok: true });
+});
+
 app.listen(port, () => {
-  console.log(`CineReview is running at http://localhost:${port}`);
-  console.log(supabase ? 'Database: Supabase' : 'Database: local SQLite');
+  console.log(`Server running at http://localhost:${port}`);
 });
